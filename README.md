@@ -28,8 +28,28 @@ To measure the performance of a program on ARM architecture, we can not use the 
 We can take a baseline measurement of the energy consumption of the CPU and GPU (either combined or separated). With this information we can establish a baseline of consumption without any other process running but the terminal (no wifi, no bluetooth, nearly reseted, no login items activated...).
 We can then measure the energy consumption of the CPU and GPU while running the program and get the difference between the baseline and the program running.
 ```bash
-$ sudo powermetrics 
+$ sudo powermetrics \
+  -i 125 \ 
+  --samplers cpu_power,gpu_power \
+  -a --hide-cpu-duty-cycle \
+  --show-usage-summary \
+  --show-extra-power-info \
+| grep --line-buffered -E "Combined Power \(CPU \+ GPU \+ ANE\): [0-9]*" \
+| sed -u -n 's/Combined Power (CPU + GPU + ANE): \([0-9]*\) mW/\1/p' \
+| while read -r line; do printf "%s, %s\n" $(date +%s) $line; done
 ```
+
+Explaination:
+- `sudo powermetrics`: run the powermetrics command as root
+- `-i 125`: sample every 125ms
+- `--samplers cpu_power,gpu_power`: sample the CPU and GPU power
+- `-a`: sample all the CPUs
+- `--hide-cpu-duty-cycle`: hide the CPU duty cycle
+- `--show-usage-summary`: show the usage summary of the entire system
+- `--show-extra-power-info`: show extra power information
+- `| grep --line-buffered -E "Combined Power \(CPU \+ GPU \+ ANE\): [0-9]*"`: get the line with the combined power of the CPU and GPU
+- `| sed -u -n 's/Combined Power (CPU + GPU + ANE): \([0-9]*\) mW/\1/p'`: get the number of the power consumption
+- `| while read -r line; do printf "%s, %s\n" $(date +%s) $line; done`: print the time and the power consumption
 
 The other option to measure an ARM processor is the total power consumtion of the board, using a RPi for exmaple. We can use a device to check how much power it has consumed during the execution of the program. This is a more accurate way to measure the power consumption of the program, but it is also more expensive and less practical due to the need of an external device and the fact that total board power consumption will be higher than the CPU power consumption.
 
